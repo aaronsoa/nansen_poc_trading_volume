@@ -1,22 +1,25 @@
-# Nansen API POC - Trading Volume Analysis
+# Nansen API POC - Trading Volume & Hyperliquid Analysis
 
-A proof-of-concept application for retrieving and analyzing on-chain trading volume using the Nansen API. This POC demonstrates how to:
+A proof-of-concept application for retrieving and analyzing on-chain trading data using the Nansen API. This POC demonstrates:
 
-- Fetch trading volume data for specific wallet addresses
-- Filter trading data by token, chain, liquidity pool (LP), or DEX
-- Aggregate and summarize trading activity
+- **Spot/DEX Trading Volume**: Fetch trading volume data for specific wallet addresses across chains and DEXes
+- **Hyperliquid Perpetual Trading**: Track perp positions and trades on Hyperliquid DEX
+- **Advanced Filtering**: Filter by token, chain, DEX, LP, date range, side (long/short), and PnL
+- **Data Aggregation**: Automatically aggregate and summarize trading activity
 
 ## Features
 
-- **Wallet Trading Volume**: Get comprehensive trading volume data for any wallet address
-- **Advanced Filtering**: Filter by:
-  - Token address
-  - Blockchain network (chain)
-  - Decentralized Exchange (DEX)
-  - Liquidity Pool (LP)
-  - Date range
-- **Volume Aggregation**: Automatically aggregates volumes by chain, token, DEX, and LP
-- **RESTful API**: Simple HTTP endpoints for easy integration
+### Spot Trading Volume
+- Get comprehensive trading volume data for any wallet address
+- Filter by token address, chain, DEX, LP, and date range
+- Automatically aggregate volumes by chain, token, DEX, and LP
+- RESTful API with GET and POST endpoints
+
+### Hyperliquid Perpetual Trading
+- **Track Positions**: Monitor open perp positions with leverage, PnL, and liquidation prices
+- **Analyze Trades**: View trade history with entry/exit prices, fees, and PnL
+- **Calculate Metrics**: Automatic win rate calculation and volume aggregation
+- **Filter by Token**: Use token symbols (BTC, ETH) instead of addresses
 
 ## Prerequisites
 

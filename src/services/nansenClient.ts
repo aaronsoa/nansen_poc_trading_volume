@@ -191,6 +191,77 @@ export class NansenClient {
   }
 
   /**
+   * Get Hyperliquid perpetual positions for a wallet
+   */
+  async getHyperliquidPositions(params: {
+    address: string;
+  }): Promise<NansenApiResponse<any>> {
+    try {
+      const response = await this.client.post('/api/v1/profiler/perp-positions', {
+        address: params.address,
+      });
+
+      return {
+        data: response.data,
+        status: response.status,
+      };
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      const errorMessage = axiosError.response?.data 
+        ? JSON.stringify(axiosError.response.data)
+        : axiosError.message;
+      console.error('[Nansen API] Hyperliquid positions error:', errorMessage);
+      throw new Error(`Failed to fetch Hyperliquid positions: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Get Hyperliquid perpetual trades for a wallet
+   */
+  async getHyperliquidTrades(params: {
+    address: string;
+    dateFrom?: string;
+    dateTo?: string;
+    page?: number;
+    perPage?: number;
+  }): Promise<NansenApiResponse<any>> {
+    try {
+      // Date is required for trades endpoint
+      const defaultDateFrom = new Date();
+      defaultDateFrom.setMonth(defaultDateFrom.getMonth() - 1); // Default to last month
+      
+      const requestBody: any = {
+        address: params.address,
+        date: {
+          from: params.dateFrom || defaultDateFrom.toISOString(),
+          to: params.dateTo || new Date().toISOString(),
+        },
+      };
+
+      if (params.page || params.perPage) {
+        requestBody.pagination = {
+          page: params.page || 1,
+          per_page: params.perPage || 100,
+        };
+      }
+
+      const response = await this.client.post('/api/v1/profiler/perp-trades', requestBody);
+
+      return {
+        data: response.data,
+        status: response.status,
+      };
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      const errorMessage = axiosError.response?.data 
+        ? JSON.stringify(axiosError.response.data)
+        : axiosError.message;
+      console.error('[Nansen API] Hyperliquid trades error:', errorMessage);
+      throw new Error(`Failed to fetch Hyperliquid trades: ${errorMessage}`);
+    }
+  }
+
+  /**
    * Generic GET request helper
    */
   async get<T>(endpoint: string, params?: Record<string, any>): Promise<NansenApiResponse<T>> {
