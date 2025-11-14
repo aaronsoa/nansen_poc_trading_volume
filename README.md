@@ -1,11 +1,13 @@
-# Nansen API POC - Trading Volume & Hyperliquid Analysis
+# Nansen API POC - Trading Volume, Hyperliquid & Portfolio Analysis
 
-A proof-of-concept application for retrieving and analyzing on-chain trading data using the Nansen API. This POC demonstrates:
+A proof-of-concept application for retrieving and analyzing on-chain trading data and DeFi portfolio metrics using the Nansen API. This POC demonstrates:
 
 - **Spot/DEX Trading Volume**: Fetch trading volume data for specific wallet addresses across chains and DEXes
 - **Hyperliquid Perpetual Trading**: Track perp positions and trades on Hyperliquid DEX
+- **Portfolio Staking Metrics**: Monitor staking positions, TVL, and rewards across protocols
+- **Portfolio Lending Metrics**: Track lending positions and calculate borrower health scores
 - **Advanced Filtering**: Filter by token, chain, DEX, LP, date range, side (long/short), and PnL
-- **Data Aggregation**: Automatically aggregate and summarize trading activity
+- **Data Aggregation**: Automatically aggregate and summarize trading activity and portfolio positions
 
 ## Features
 
@@ -20,6 +22,12 @@ A proof-of-concept application for retrieving and analyzing on-chain trading dat
 - **Analyze Trades**: View trade history with entry/exit prices, fees, and PnL
 - **Calculate Metrics**: Automatic win rate calculation and volume aggregation
 - **Filter by Token**: Use token symbols (BTC, ETH) instead of addresses
+
+### Portfolio DeFi Metrics
+- **Staking Analysis**: Total TVL locked, rewards tracking, and protocol breakdown
+- **Lending Analysis**: Borrower health scores (normalized 0-100), debt ratios, and protocol positions
+- **Multi-Protocol Support**: Track positions across Lido, Aave, Compound, and other protocols
+- **Combined Metrics**: View staking and lending data together for complete portfolio analysis
 
 ## Prerequisites
 
@@ -104,6 +112,111 @@ Request body:
 }
 ```
 
+#### Get Staking Metrics for a Wallet
+
+**GET** `/api/portfolio/staking/:walletAddress`
+
+Returns total staking TVL, protocol breakdown, and rewards information.
+
+Example:
+```bash
+curl http://localhost:3000/api/portfolio/staking/0x1234567890abcdef
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "totalStakingTvlUsd": 5000,
+    "totalRewardsUsd": 250,
+    "stakingProtocols": [
+      {
+        "protocolName": "Lido",
+        "chain": "ethereum",
+        "totalValueUsd": 5000,
+        "totalAssetsUsd": 5000,
+        "totalRewardsUsd": 250,
+        "tokenCount": 1
+      }
+    ],
+    "message": "Note: Sustained staking days calculation requires historical tracking..."
+  }
+}
+```
+
+#### Get Lending Metrics for a Wallet
+
+**GET** `/api/portfolio/lending/:walletAddress`
+
+Returns borrower health score and lending positions.
+
+- **Borrower Health Score** (0-100): Normalized score where 100 = perfect health (no debt), 0 = critical (no assets but has debt)
+  - Health Score = min((total_assets_usd / total_debts_usd) / 2 * 100, 100)
+  - If no debt: score = 100
+  - If no assets but debt exists: score = 0
+
+Example:
+```bash
+curl http://localhost:3000/api/portfolio/lending/0x1234567890abcdef
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "borrowerHealthScore": 100,
+    "totalAssetsUsd": 12000,
+    "totalDebtsUsd": 6000,
+    "lendingProtocols": [
+      {
+        "protocolName": "Aave",
+        "chain": "ethereum",
+        "totalValueUsd": 6000,
+        "totalAssetsUsd": 12000,
+        "totalDebtsUsd": 6000,
+        "debtRatio": 0.5,
+        "tokenCount": 2
+      }
+    ]
+  }
+}
+```
+
+#### Get Combined Portfolio Metrics
+
+**GET** `/api/portfolio/metrics/:walletAddress`
+
+Returns both staking and lending metrics in a single request.
+
+Example:
+```bash
+curl http://localhost:3000/api/portfolio/metrics/0x1234567890abcdef
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "walletAddress": "0x1234567890abcdef",
+    "staking": {
+      "totalStakingTvlUsd": 5000,
+      "stakingProtocols": [],
+      "totalRewardsUsd": 250
+    },
+    "lending": {
+      "borrowerHealthScore": 100,
+      "totalAssetsUsd": 12000,
+      "totalDebtsUsd": 6000,
+      "lendingProtocols": []
+    },
+    "timestamp": "2024-11-14T12:00:00Z"
+  }
+}
+```
+
 ### Response Format
 
 ```json
@@ -159,25 +272,50 @@ npm test
 ```
 src/
 ├── config/
-│   └── nansen.ts          # Configuration and environment variables
+│   └── nansen.ts                    # Configuration and environment variables
 ├── models/
-│   └── tradingVolume.ts   # Data models and interfaces
+│   ├── tradingVolume.ts             # Data models for trading volume
+│   └── hyperliquid.ts               # Data models for Hyperliquid
 ├── services/
-│   ├── nansenClient.ts    # Nansen API client with retry logic
-│   └── tradingVolumeService.ts  # Business logic for trading volume
+│   ├── nansenClient.ts              # Nansen API client with retry logic
+│   ├── tradingVolumeService.ts      # Business logic for trading volume
+│   ├── hyperliquidService.ts        # Business logic for Hyperliquid trading
+│   └── portfolioService.ts          # Business logic for DeFi portfolio analysis
 ├── routes/
-│   └── tradingVolumeRoute.ts    # Express routes
+│   ├── tradingVolumeRoute.ts        # Express routes for trading volume
+│   ├── hyperliquidRoute.ts          # Express routes for Hyperliquid
+│   └── portfolioRoute.ts            # Express routes for portfolio metrics
 ├── utils/
-│   └── filters.ts         # Filtering utilities
-└── index.ts              # Express app entry point
+│   └── filters.ts                   # Filtering utilities
+└── index.ts                         # Express app entry point
 ```
 
 ## Notes
 
+### General
 - This is a POC and may need adjustments based on the actual Nansen API endpoint structure
 - The API endpoints used are based on available documentation and may require verification
 - Rate limiting and error handling are implemented but may need tuning based on actual API behavior
 - Volume calculations use raw token amounts; USD conversion would require additional price data
+
+### Portfolio Metrics
+- **Staking Analysis**: The Portfolio API returns current staking positions. To track "sustained staking days" (e.g., staked > X amount for N consecutive days), you'll need to:
+  - Poll the `/api/portfolio/staking/:walletAddress` endpoint periodically (daily/hourly)
+  - Store snapshots of staking amounts with timestamps
+  - Implement historical tracking logic to determine consecutive days meeting your threshold
+  - The service includes a message hint suggesting this approach
+
+- **Borrower Health Score**: Uses a normalized 0-100 scale:
+  - **100**: Perfect health (no debt or sufficient collateral)
+  - **50-99**: Good health (assets > debts)
+  - **1-49**: Risky (assets approaching debts)
+  - **0**: Critical (no assets but has debt)
+  - Formula: `Health Score = min((total_assets_usd / total_debts_usd) / 2 * 100, 100)` when debt > 0
+
+- **Protocol-Level Data**: The API provides individual protocol breakdowns for both staking and lending, allowing you to:
+  - Identify which protocols contribute most to your portfolio
+  - Monitor individual protocol health factors
+  - Calculate per-protocol debt ratios and collateralization
 
 ## License
 

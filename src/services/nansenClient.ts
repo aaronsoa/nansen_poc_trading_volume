@@ -27,6 +27,38 @@ export interface NansenSmartMoneyDexTradesResponse {
   pageSize?: number;
 }
 
+export interface NansenPortfolioToken {
+  address: string;
+  symbol: string;
+  amount: string;
+  value_usd: number;
+  position_type?: string;
+}
+
+export interface NansenPortfolioProtocol {
+  protocol_name: string;
+  chain: string;
+  total_value_usd: number;
+  total_assets_usd: number;
+  total_debts_usd: number;
+  total_rewards_usd?: number;
+  tokens: NansenPortfolioToken[];
+}
+
+export interface NansenPortfolioSummary {
+  total_value_usd: number;
+  total_assets_usd: number;
+  total_debts_usd: number;
+  total_rewards_usd?: number;
+  token_count: number;
+  protocol_count: number;
+}
+
+export interface NansenPortfolioDefiHoldings {
+  summary: NansenPortfolioSummary;
+  protocols: NansenPortfolioProtocol[];
+}
+
 export class NansenClient {
   private client: AxiosInstance;
   private readonly maxRetries = 3;
@@ -274,6 +306,76 @@ export class NansenClient {
     } catch (error) {
       const axiosError = error as AxiosError;
       throw new Error(`API request failed: ${axiosError.message}`);
+    }
+  }
+
+  /**
+   * Get Portfolio DeFi Holdings for a wallet address
+   * Includes staking, lending, and other DeFi positions
+   */
+  async getPortfolioDefiHoldings(walletAddress: string): Promise<NansenApiResponse<NansenPortfolioDefiHoldings>> {
+    try {
+      const response = await this.client.post('/api/v1/portfolio/defi-holdings', {
+        wallet_address: walletAddress,
+      });
+
+      return {
+        data: response.data,
+        status: response.status,
+      };
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      const errorMessage = axiosError.response?.data 
+        ? JSON.stringify(axiosError.response.data)
+        : axiosError.message;
+      console.error('[Nansen API] Portfolio DeFi holdings error:', errorMessage);
+      throw new Error(`Failed to fetch portfolio DeFi holdings: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Get Portfolio DeFi Holdings History for a wallet address (if available)
+   * This is a placeholder for potential historical data tracking
+   */
+  async getPortfolioDefiHoldingsHistory(params: {
+    walletAddress: string;
+    dateFrom?: string;
+    dateTo?: string;
+    page?: number;
+    perPage?: number;
+  }): Promise<NansenApiResponse<any>> {
+    try {
+      const requestBody: any = {
+        wallet_address: params.walletAddress,
+      };
+
+      if (params.dateFrom || params.dateTo) {
+        requestBody.date = {
+          from: params.dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          to: params.dateTo || new Date().toISOString(),
+        };
+      }
+
+      if (params.page || params.perPage) {
+        requestBody.pagination = {
+          page: params.page || 1,
+          per_page: params.perPage || 100,
+        };
+      }
+
+      const response = await this.client.post('/api/v1/portfolio/defi-holdings/history', requestBody);
+
+      return {
+        data: response.data,
+        status: response.status,
+      };
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      const errorMessage = axiosError.response?.data 
+        ? JSON.stringify(axiosError.response.data)
+        : axiosError.message;
+      console.error('[Nansen API] Portfolio DeFi holdings history error:', errorMessage);
+      throw new Error(`Failed to fetch portfolio DeFi holdings history: ${errorMessage}`);
     }
   }
 

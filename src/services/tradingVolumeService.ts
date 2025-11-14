@@ -38,6 +38,16 @@ export class TradingVolumeService {
       dex = 'stargate';
     } else if (label.toLowerCase().includes('opensea')) {
       dex = 'opensea';
+    } else if (label.toLowerCase().includes('aerodrome')) {
+      dex = 'aerodrome';
+      if (label.includes('Liquidity Pool') || label.includes('Pool')) {
+        lpPool = counterparty.counterparty_address;
+      }
+    } else if (label.toLowerCase().includes('velodrome')) {
+      dex = 'velodrome';
+      if (label.includes('Liquidity Pool') || label.includes('Pool')) {
+        lpPool = counterparty.counterparty_address;
+      }
     }
     
     // Create volume entries for each token interaction
